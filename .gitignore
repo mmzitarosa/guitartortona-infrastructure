@@ -1,10 +1,18 @@
-# Secrets
+# Secrets (NON committiamo mai secrets!)
 *.key
 *.pem
 *.crt
 *-credentials.txt
+*-token.txt
 
-# Temporary files
+# References e backup
+*-reference.yaml
+*-raw.yaml
+*-backup.yaml
+*-extracted.yaml
+secrets-*.yaml
+
+# Temporary
 *.tmp
 *.swp
 .DS_Store

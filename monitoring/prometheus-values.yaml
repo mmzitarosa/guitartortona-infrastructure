@@ -1,0 +1,76 @@
+# Configurazione kube-prometheus-stack per Guitar Tortona
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+    # ServiceMonitor per rilevare automaticamente le app con metriche
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+grafana:
+  enabled: true
+  adminPassword: "GuitarMonitor2025!"  # CAMBIA QUESTA PASSWORD
+  persistence:
+    enabled: true
+    size: 5Gi
+  ingress:
+    enabled: true
+    ingressClassName: public
+    hosts:
+      - grafana.guitar.lab
+    tls:
+      - secretName: guitar-lab-tls
+        hosts:
+          - grafana.guitar.lab
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+
+# Configurazione per raccogliere metriche da Spring Boot
+additionalServiceMonitors:
+  - name: spring-boot-production
+    selector:
+      matchLabels:
+        app: guitartortona-api
+    namespaceSelector:
+      matchNames:
+        - default
+    endpoints:
+      - port: http
+        path: /actuator/prometheus
+        interval: 30s
+  
+  - name: spring-boot-staging
+    selector:
+      matchLabels:
+        app: guitartortona-api
+    namespaceSelector:
+      matchNames:
+        - staging
+    endpoints:
+      - port: http
+        path: /actuator/prometheus
+        interval: 30s
+
+# Abilita metriche dei nodi
+nodeExporter:
+  enabled: true
+
+# Abilita metriche di Kubernetes
+kubeStateMetrics:
+  enabled: true
