@@ -17,35 +17,33 @@ spec:
         app: mariadb
     spec:
       containers:
-      - name: mariadb
-        image: bitnami/mariadb:11.0
-        ports:
-        - containerPort: 3306
-          name: mysql
-        env:
-        - name: MARIADB_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mariadb-root
-              key: password
-        - name: MARIADB_DATABASE
-          value: "guitartortona"
-        volumeMounts:
-        - name: data
-          mountPath: /bitnami/mariadb
+        - name: mariadb
+          image: mariadb:11
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-root
+                  key: password
+          volumeMounts:
+            - name: mariadb-data
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+  volumeClaimTemplates:
+    - metadata:
+        name: mariadb-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: microk8s-hostpath
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      storageClassName: microk8s-hostpath
-      resources:
-        requests:
-          storage: 10Gi
+            storage: 10Gi

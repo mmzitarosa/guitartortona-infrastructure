@@ -13,7 +13,9 @@ spec:
   source:
     repoURL: https://github.com/mmzitarosa/guitartortona-api-deploy.git
     targetRevision: staging
-    path: .  # ← ROOT
+    path: .
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: staging
