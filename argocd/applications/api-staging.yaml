@@ -3,9 +3,6 @@ kind: Application
 metadata:
   name: guitartortona-api-staging
   namespace: argocd
-  labels:
-    app: guitartortona-api
-    environment: staging
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
