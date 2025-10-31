@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: guitar-wildcard-cert
+  namespace: default
+spec:
+  secretName: guitar-wildcard-tls
+  issuerRef:
+    name: guitar-ca-issuer
+    kind: ClusterIssuer
+  commonName: "*.guitar.lab"
+  dnsNames:
+    - "*.guitar.lab"
+    - "guitar.lab"
+  duration: 8760h # 1 anno
+  renewBefore: 720h # 30 giorni prima
