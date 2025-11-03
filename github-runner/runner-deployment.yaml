@@ -1,0 +1,26 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: guitartortona-api-runner
+  namespace: actions-runner-system
+  labels:
+    app: github-runner
+spec:
+  replicas: 1
+  template:
+    spec:
+      repository: mmzitarosa/guitartortona-api
+      labels:
+        - self-hosted
+        - linux
+        - k8s
+      ephemeral: false
+      dockerdWithinRunnerContainer: false
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+      serviceAccountName: default

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-config
+  namespace: argocd
+data:
+  # Permetti accesso senza TLS da Ingress
+  server.insecure: "true"

@@ -1,0 +1,198 @@
+# Prometheus Stack Helm Values
+# helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack -f prometheus-values.yaml -n monitoring
+
+## Grafana Configuration
+grafana:
+  enabled: true
+  adminPassword: admin  # CHANGE IN PRODUCTION
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: guitar-ca-issuer
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - grafana.guitar.lab
+    tls:
+      - secretName: guitar-wildcard-tls
+        hosts:
+          - grafana.guitar.lab
+  
+  persistence:
+    enabled: true
+    storageClassName: microk8s-hostpath
+    size: 10Gi
+  
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://kube-prometheus-stack-prometheus:9090
+        access: proxy
+        isDefault: true
+      - name: Loki
+        type: loki
+        url: http://loki:3100
+        access: proxy
+  
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+  
+  dashboards:
+    default:
+      # SpringBoot Dashboard
+      spring-boot:
+        gnetId: 12900
+        revision: 1
+        datasource: Prometheus
+      # JVM Dashboard
+      jvm-micrometer:
+        gnetId: 4701
+        revision: 6
+        datasource: Prometheus
+      # Kubernetes Cluster
+      k8s-cluster:
+        gnetId: 7249
+        revision: 1
+        datasource: Prometheus
+      # Node Exporter
+      node-exporter:
+        gnetId: 1860
+        revision: 27
+        datasource: Prometheus
+
+## Prometheus Configuration
+prometheus:
+  enabled: true
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: guitar-ca-issuer
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - prometheus.guitar.lab
+    tls:
+      - secretName: guitar-wildcard-tls
+        hosts:
+          - prometheus.guitar.lab
+  
+  prometheusSpec:
+    retention: 30d
+    retentionSize: "20GB"
+    
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: microk8s-hostpath
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 25Gi
+    
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+    
+    # ServiceMonitor per SpringBoot apps
+    additionalScrapeConfigs:
+    - job_name: 'springboot-staging'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - staging
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+    
+    - job_name: 'springboot-production'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - production
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+
+## Alertmanager Configuration
+alertmanager:
+  enabled: true
+  
+  config:
+    global:
+      resolve_timeout: 5m
+    
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'null'
+      routes:
+      - match:
+          alertname: Watchdog
+        receiver: 'null'
+    
+    receivers:
+    - name: 'null'
+    # Add Slack/Email receivers here
+
+## Node Exporter
+nodeExporter:
+  enabled: true
+
+## Kube State Metrics
+kubeStateMetrics:
+  enabled: true
+
+## Prometheus Operator
+prometheusOperator:
+  enabled: true
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
